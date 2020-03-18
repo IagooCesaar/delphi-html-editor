@@ -2,7 +2,9 @@ unit uFuncoes;
 
 interface
 
-uses System.SysUtils, Vcl.Forms;
+uses  System.SysUtils, Vcl.Forms, Vcl.ComCtrls, Data.DB, Datasnap.DBClient,
+      SHDocVw, System.Classes, WinApi.TLHelp32, Winapi.Messages,
+      Winapi.ShellAPI, Winapi.ActiveX;
 
 type
    { Funcoes }
@@ -14,6 +16,10 @@ type
          class procedure OcultarArquivo(Caminho : String);
          class function  AjustaAlturaFormModal(FormHandle, iAltura : Integer) : Integer;
          class function  AjustaLarguraFormModal(FormHandle, iLargura : Integer) : Integer;
+         class procedure EscondeSheets(pcGeral : TPageControl);
+         class procedure CriaIndicesClientDataSet(cdsAlvo : TClientDataSet);
+         class function  RemoveAcentuacao(Texto : String) : String;
+         class procedure CarregarHtmlWebBrowser(WebBrowser: TWebBrowser; HTMLCode: string);
    end;
 
 implementation
@@ -36,6 +42,55 @@ begin
       Result := Screen.MonitorFromWindow(FormHandle).Width-100
    else
       Result := ilargura;
+end;
+
+class procedure Funcoes.CarregarHtmlWebBrowser(WebBrowser: TWebBrowser;
+  HTMLCode: string);
+var
+   sl: TStringList;
+   ms: TMemoryStream;
+begin
+   WebBrowser.Navigate('about:blank') ;
+   while WebBrowser.ReadyState < READYSTATE_INTERACTIVE do Application.ProcessMessages;
+   if Assigned(WebBrowser.Document) then begin
+      sl := TStringList.Create;
+      try
+         ms := TMemoryStream.Create;
+         try
+            sl.Text := HTMLCode;
+            sl.SaveToStream(ms) ;
+            ms.Seek(0,0) ;
+            (WebBrowser.Document as IPersistStreamInit).Load(TStreamAdapter.Create(ms));
+         finally
+            ms.Free;
+         end;
+      finally
+         sl.Free;
+      end;
+   end;
+end;
+
+class procedure Funcoes.CriaIndicesClientDataSet(cdsAlvo: TClientDataSet);
+var i : Integer;
+begin
+   cdsAlvo.IndexDefs.Clear;
+   for i := 0 to cdsAlvo.FieldCount - 1 do begin
+      if (cdsAlvo.Fields[i].FieldKind = fkData) and not (cdsAlvo.Fields[i] is TMemoField) then begin
+         cdsAlvo.IndexDefs.Add('a' + cdsAlvo.Fields[i].FieldName,
+         cdsAlvo.Fields[i].FieldName, []);
+         cdsAlvo.IndexDefs.Add('d' + cdsAlvo.Fields[i].FieldName,
+         cdsAlvo.Fields[i].FieldName, [ixDescending]);
+      end;
+   end;
+end;
+
+class procedure Funcoes.EscondeSheets(pcGeral: TPageControl);
+var i: Integer;
+begin
+   pcGeral.ActivePage.TabVisible := True;
+   for i := 0 to pcGeral.PageCount - 1 do begin
+      pcGeral.Pages[i].TabVisible := pcGeral.ActivePageIndex = i;
+   end;
 end;
 
 class function Funcoes.GeraStringRandomica(Tamanho: Integer;
@@ -74,6 +129,16 @@ begin
    if not FileExists(Caminho) then Exit;
    Attr := faHidden;
    FileSetAttr(Caminho, Attr);
+end;
+
+class function Funcoes.RemoveAcentuacao(Texto: String): String;
+//fonte: https://marcosalles.wordpress.com/2013/04/14/dicas-removendo-acentos-de-uma-string-delphi/
+type USASCIIString = type AnsiString(20127);
+var C:Char;
+begin
+   result:='';
+   for C in Texto do
+     result:=result+String(USASCIIString(C));
 end;
 
 end.

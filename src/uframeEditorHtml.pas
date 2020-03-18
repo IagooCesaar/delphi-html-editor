@@ -116,11 +116,12 @@ type
   private
     HtmlOriginal     : TStrings;
     HtmlModificado   : TStrings;
+    ArqAnterior      : String;
 
     FPodeAlterar     : Boolean;
     FPodeSalvar      : Boolean;
-    FOcultarBotoes: Boolean;
-    FPodeAbrir: Boolean;
+    FOcultarBotoes   : Boolean;
+    FPodeAbrir       : Boolean;
 
     procedure SetPodeAlterar(const Value: Boolean);
     procedure SetPodeSalvar(const Value: Boolean);
@@ -441,11 +442,12 @@ begin
    DocumentoEmBranco(wbHtml);
    if CodigoHtml <> '' then begin
       try
-         Arq   := Funcoes.GeraStringRandomica(4,2);
-         Arq   := ExtractFilePath(ParamStr(0))+'EditorHml_'+Arq+'.html';
+         if ArqAnterior <> '' then DeleteFile(ArqAnterior);
+         Arq         := Funcoes.GeraStringRandomica(4,2);
+         Arq         := ExtractFilePath(ParamStr(0))+'EditorHml_'+Arq+'.html';
+         ArqAnterior := Arq;
 
-         if FileExists(Arq) then
-            DeleteFile(Arq);
+         if FileExists(Arq) then DeleteFile(Arq);
          Html        := TStringList.Create;
          Html.Text   := CodigoHtml;
          Html.SaveToFile(Arq);
